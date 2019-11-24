@@ -19,8 +19,8 @@ class MyButton extends React.Component {
   render() {
     return (
       <div>
+        <button onClick={_ => this.handleClick()}>Click me</button>
         <div>{this.state.value}</div>
-        <button onClick={_ => this.handleClick()}>Click</button>
       </div>
     )
   }
@@ -37,8 +37,8 @@ class ClickCounter extends View {
   init(__args__) {
     this.clickCount = 0
     build('div', [
-      h('div').f('text:clickCount'),
-      h('button').on('click', _ => this.handleClick())
+      h('button', 'Click me').on('click', _ => this.handleClick()),
+      h('div').f('text:clickCount')
     ])
   }
   handleClick() {
@@ -133,10 +133,7 @@ Configure it by adding this to the **.babelrc** file in your project:
 {
   "plugins": [
     [
-      "pillbug", {
-        "oldArgs": "__args__",
-        "newArgs": "app, box, , build, el, h, obj, seq, watch"
-      }
+      "pillbug"
     ]
   ]
 }
@@ -149,6 +146,13 @@ Refer to the [tutorial](./Tutorial.md) and the [reference](./Reference.md).
 ## Project Status
 
 This project is in very early stages and things are subject to change. Contributions welcome.
+
+#### Things To Do:
+
+ - dismounting 
+ - subclass caches?
+ - change key to seq?
+
 
 ## Licence
 
