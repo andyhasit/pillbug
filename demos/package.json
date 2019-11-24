@@ -1,0 +1,15 @@
+{
+  "name": "pillbug-demos",
+  "version": "0.0.0",
+  "description": "Demos for Pillbug",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Andrew Buchan",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.7.4",
+    "pillbug-js": "^0.0.4"
+  }
+}
