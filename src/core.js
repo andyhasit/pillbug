@@ -63,15 +63,12 @@ export class View {
   build(desc, atts, inner) {
     return this.root = this.h(desc, atts, inner)
   }
-  box(viewClass, obj, name) {
+  box(viewClass, obj) {
     /*
      * Builds a nested view of the specified class.
      * No caching is used. Use a cache object returned by this.cache() if you need caching.
      */
     let view = new viewClass(this.app, obj, undefined, this)
-    if (name) { 
-      this._saveAs_(view, name)
-    }
     this._nested_.push(view)
     return view
   }
@@ -82,12 +79,11 @@ export class View {
     /*
      *   The bound equivalent of h(). Ensures Wrappers have reference to this view.
      */
-    if (und(inner)) {
-      inner = atts
-      atts = {}
-    }
+    // if (und(inner)) {
+    //   inner = atts
+    //   atts = {}
+    // }
     let el = h(tag, atts, inner, this)
-    this._saveAs_(el, tag.split(' ')[0])
     return el
   }
   update(newObj) {
