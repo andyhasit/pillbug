@@ -65,7 +65,7 @@ Pillbug's approach is a lot more efficient because:
 
 *Performance* however is mostly affected by how you wield the DOM rather than in-memory operations (though they still count). This [article](https://codeburst.io/taming-huge-collections-of-dom-nodes-bebafdba332) is essential reading on DOM performance, and was a big inspiration for Pillbug.
 
-Aside from being faster than virtual DOM frameworks out of the box, Pillbug also makes it easy to get within milliseconds of the fastest possible render in the browser (which is *a lot faster* than most frameworks).
+Pillbug is already faster than React, and seems on par with VueJs but I've not done any performance tweaking yet. Here are some JsFiddles which print times to the console (credit to [Hajime Yamasaki Vukelic](https://jsfiddle.net/user/foxbunny/fiddles/) - the author of that blog post) [React](https://jsfiddle.net/foxbunny/bymv8jdk/), [Pillbug](https://jsfiddle.net/whg8jxnq/7/), [VueJS](https://jsfiddle.net/foxbunny/yju7szzs/) and [Snabdom](https://jsfiddle.net/foxbunny/7Ldhugqg/) which is very fast.
 
 #### Productivity
 
