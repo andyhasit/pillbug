@@ -150,7 +150,10 @@ This project is in very early stages and things are subject to change. Contribut
 
  - dismounting 
  - subclass caches?
- - change key to seq?
+ - testing
+ - tutorial
+ - reference
+ - more demos
 
 
 ## Licence

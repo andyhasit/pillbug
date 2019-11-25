@@ -3,6 +3,7 @@
   "version": "0.0.7",
   "description": "A realy zany framework",
   "scripts": {
+    "build": "microbundle",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Andrew Buchan",
