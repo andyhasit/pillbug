@@ -75,14 +75,14 @@ export class View {
   el(name) {
     return this._named_[name]
   }
-  h(tag, inner) {
+  h(tag, atts, inner) {
     /*
      *   The bound equivalent of h(). Ensures Wrappers have reference to this view.
      */
-    // if (und(inner)) {
-    //   inner = atts
-    //   atts = {}
-    // }
+    if (und(inner)) {
+      inner = atts
+      atts = {}
+    }
     let el = h(tag, atts, inner, this)
     return el
   }
