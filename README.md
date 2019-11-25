@@ -120,14 +120,13 @@ Get Pillbug from npm:
 npm i pillbug-js --save-dev
 ```
 
-Install the babel plugin:
+This will also install `babel-plugin-pillbug` which requires babel, which you can install with:
 
 ```
 npm install --save-dev @babel/core
-npm install babel-plugin-pillbug
 ```
 
-Configure it by adding this to the **.babelrc** file in your project:
+Add the plugin to the **.babelrc** file in your project:
 
 ```
 {

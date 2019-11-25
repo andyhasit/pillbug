@@ -1,6 +1,6 @@
-import {App, View} from '../../core.js' //pillbug-js'
+window.c = console   // So you can debug with c.log()
+import {App, View} from 'pillbug-js'
 
-const c = console
 
 class ClickCounter extends View {
   init(__args__) {
@@ -15,6 +15,7 @@ class ClickCounter extends View {
     this.update()
   }
 }
+
 
 const app = new App()
 app.mount(ClickCounter, '#main')
