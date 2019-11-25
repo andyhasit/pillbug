@@ -149,7 +149,8 @@ This project is in very early stages and things are subject to change. Contribut
 #### Things To Do:
 
  - dismounting 
- - subclass caches?
+ - subclass caches
+ - figure out what's happening with transitions
  - testing
  - tutorial
  - reference
