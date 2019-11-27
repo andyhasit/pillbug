@@ -2,6 +2,8 @@
 
 A really zany framework.
 
+**Note 27/11/2019:** Version 0.1.0 arriving soon, please hold off from using this in the time being as it has some issues, and will be changing quite a bit.
+
 ## Overview
 
 Pillbug is a tiny, lightening fast JavaScript framework for building reactive web apps, or making parts of existing pages reactive (it's 1.8KB gzipped, so you'll barely notice it).
