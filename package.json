@@ -1,6 +1,6 @@
 {
   "name": "pillbug-js",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "description": "A realy zany framework",
   "scripts": {
     "build": "microbundle",
@@ -21,7 +21,7 @@
     "url": "https://github.com/andyhasit/pillbug"
   },
   "dependencies": {
-    "babel-plugin-pillbug": "^1.0.5"
+    "babel-plugin-pillbug-js": "^0.1.0"
   },
   "devDependencies": {
     "microbundle": "^0.11.0"

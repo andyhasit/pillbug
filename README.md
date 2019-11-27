@@ -4,7 +4,7 @@ A really zany framework.
 
 ## Overview
 
-Pillbug is a tiny, lightening fast JavaScript framework for building reactive web apps, or making parts of existing pages reactive (it's 1.8KB gzipped, so you'll barely notice it).
+Pillbug is a tiny, fast and very simple JavaScript framework for building reactive web apps, or making parts of existing pages reactive.
 
 The easiest way to understand Pillbug is to compare it to [React](https://reactjs.org/). 
 
@@ -142,9 +142,33 @@ Add the plugin to the **.babelrc** file in your project:
 
 Refer to the [tutorial](./Tutorial.md) and the [reference](./Reference.md).
 
-## Project Status
+## Change log
 
-This project is in very early stages and things are subject to change. Contributions welcome.
+This project is in very early stages and things are subject to change. 
+
+If you're behind one of the 314 downloads from NPM prior to version 1 which wasn't me, congratulations on finding this!
+
+#### 0.1.0
+
+The parameters changed from `(app, box, build, el, h, obj, seq, watch)` to `(app, box, bubble, build, el, h, s, seq, watch)`
+
+Because it turns out passing `obj` directly was a bad idea, you should only ever access it from `this`. 
+
+The two extra parameters are `bubble` (a cool method) and `s` which is an alias for `this`.
+
+So where you had `obj`, you now write `s.o` (this applies to watches too).
+
+
+
+
+
+Contributions welcome.
+
+
+
+#### Change log:
+
+
 
 #### Things To Do:
 

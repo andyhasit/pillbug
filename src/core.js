@@ -2,13 +2,23 @@
  * Pillbug (https://github.com/andyhasit/pillbug)
  */
 
+/*
+TODO:
+
+Stop passing obj, pass s for self instead.
+pass app as db
+
+*/
+
+
 const doc = document;
 
 
 export class App {
   /* The root object which you mount top level views to */
-  constructor() {
+  constructor(props) {
     this._nested_ = []
+    Object.assign(this, props)
   }
   mount(viewClass, idEl, obj) {
     /* Mounts a top level view and builds it instantly.
@@ -17,8 +27,8 @@ export class App {
      * @param {idEl} id or element to wrap
      * @param {obj} optional, gets passed to view constructor
      */
-    let view = new viewClass(this, obj)
-    bindWrapper(idEl, view.root)
+    let view = inst(viewClass, this, this, obj)
+    mount(view, idEl)
     this._nested_.push(view)
   }
   update() {
@@ -29,15 +39,16 @@ export class App {
 
 
 export class View {
-  constructor(app, obj, seq, parent) {
+  constructor(app, parent, obj, seq) {
     let s = this
-    s.app = app             // Reference to the containing app
-    s.obj = obj             // The object passed to the view
-    s.seq = seq             // The key - only for nested views
+    s.app = app             // Reference to the containing app. This is static
+    s.o = obj               // The object passed to the view. May be changed
+    s.seq = seq             // The sequence - only for nested views
     s.parent = parent       // The parent view
     s.root = undefined      // This view's root wrapper
     s._nested_ = []         // Nested views
     s._named_ = {}          // Named elements or views
+    s._always_ = []         // Callbacks that should always by run during update
     s._watches_ = {}        // Watches
     s._previous_ = {}       // The previous values for watches to compare against
     
@@ -45,20 +56,30 @@ export class View {
     s._args_ = [
       s.app,             // app
       s.box.bind(s),     // box
+      s.bubble.bind(s),  // bubble
       s.build.bind(s),   // build
       s.el.bind(s),      // el
       s.h.bind(s),       // h
-      s.obj,             // obj
+      s,                 // s - a reference to self
       s.seq,             // seq
       s.watch.bind(s)    // watch
     ]
-    s.init(...s._args_)
   }
   as(name) {
-    /*  Saves it as 'name'
+    /*  
+     * Saves it as 'name' so it can be retrieved with el(name) later
      */
     this.parent._saveAs_(this, name)
     return this // Keep this because people will use it like on the wrapper.
+  }
+  bubble(name, args) {
+    let target = this
+    while (!und(target)) {
+      if (name in target) {
+        return target[name].apply(target, args)
+      }
+      target = target.parent
+    }
   }
   build(desc, atts, inner) {
     return this.root = this.h(desc, atts, inner)
@@ -68,31 +89,39 @@ export class View {
      * Builds a nested view of the specified class.
      * No caching is used. Use a cache object returned by this.cache() if you need caching.
      */
-    let view = new viewClass(this.app, obj, undefined, this)
+    let view = inst(viewClass, this.app, this, obj)
     this._nested_.push(view)
     return view
   }
   el(name) {
     return this._named_[name]
   }
-  h(tag, atts, inner) {
+  h(desc, atts, inner) {
     /*
-     *   The bound equivalent of h(). Ensures Wrappers have reference to this view.
-     */
+     * Returns a new Wrapper around a new DOM element.
+     * @param {str} desc -- string representing an element type. e.g. 'div'. Any additional
+     * words are used as cls e.g. 'i far fa-bell' becomes <i class="far fa-bell">
+     * @param {View} view -- optional the view which the 
+    */
+    // TODO: check performance on all this. Too much time splitting strings/array 
+    // or should I only wrap at end?
+    let tag, cls, w
     if (und(inner)) {
       inner = atts
       atts = {}
     }
-    let el = h(tag, atts, inner, this)
-    return el
+    [tag, ...cls] = desc.trim().split(' ')
+    w = new Wrapper(doc.createElement(tag), this)
+    cls.forEach(i => i.startsWith('#') ? w.att('id', i.slice(1)) : w.clsAdd(i)) 
+    return w.atts(atts).inner(inner)
   }
   update(newObj) {
     /*  
      *   The external call to update the view. 
      *   @newObj -- new object, else it keeps its old (which is fine)
      */
-    if (!und(newObj)) {
-      this.obj = newObj
+    if (newObj) {
+      this.o = newObj
     }
     this._update_(this._args_)
   }
@@ -109,10 +138,14 @@ export class View {
       e.g. (n,o) => alert(`Value changed from ${o} to ${n}`)
 
     */
-    if (!this._watches_.hasOwnProperty(path)) {
-      this._watches_[path] = []
+    if (path === null) {
+      this._always_.push(callback)
+    } else {
+      if (!this._watches_.hasOwnProperty(path)) {
+        this._watches_[path] = []
+      }
+      this._watches_[path].push(callback)
     }
-    this._watches_[path].push(callback)
     return this // Keep this because people will use it like on the wrapper.
   }
   _saveAs_(item, name){
@@ -126,6 +159,7 @@ export class View {
     /*
      * Iterates through watches. If the value has changed, call callback.
      */
+    this._always_.forEach(fn => fn())
     let path, newValue, previous
     for (path in this._watches_) {
       newValue = getProp(this, path)
@@ -329,7 +363,7 @@ export class Wrapper {
   }
   _ge(item) {
     /*
-    Returns a native element for attaching
+    Returns a native DOM element for attaching
     */
     if (item instanceof Wrapper) {
       return item.e
@@ -338,23 +372,10 @@ export class Wrapper {
     } else if (item instanceof Node) {
       return item
     } else {
-      return doc.createTextNode(item.toString())
+      return doc.createTextNode( und(item) ? '' : item)
     }
   }
 }
-
-
-export function transition(el, fn) {
-  return new Promise(resolve => {
-    fn()
-    let transitionEnded = e => {
-      el.removeEventListener('transitionend', transitionEnded)
-      resolve()
-    }
-  el.addEventListener('transitionend', transitionEnded)
-  })
-}
-
 
 
 export class ViewCache {
@@ -371,7 +392,7 @@ export class ViewCache {
     */
     this._a = app
     this._v = view
-    this._vc = viewClass
+    this.viewClass = viewClass
     this._c = {}
     this._k = cacheBy 
     this._seq = 0
@@ -392,7 +413,7 @@ export class ViewCache {
     if (this._c.hasOwnProperty(key)) {
       view = this._c[key]
     } else {
-      view = new this._vc(this._a, obj, this._seq, this._v) // viewClass
+      view = inst(this.viewClass, this._a, this._v, obj, this._seq)
       this._c[key] = view
     }
     view.update(obj)
@@ -401,21 +422,10 @@ export class ViewCache {
   }
 }
 
-
-function h(desc, atts, inner, view) {
-  /*
-   * Returns a new Wrapper around a new DOM element.
-   * @param {str} desc -- string representing an element type. e.g. 'div'. Any additional
-   * words are used as cls e.g. 'i far fa-bell' becomes <i class="far fa-bell">
-   * @param {View} view -- optional the view which the 
-  */
-  let tag, cls, w
-  [tag, ...cls] = desc.trim().split(' ')
-  w = new Wrapper(doc.createElement(tag), view)
-  cls.forEach(i => i.startsWith('#') ? w.att('id', i.slice(1)) : w.clsAdd(i)) // can supply an array - change?
-  w.atts(atts)
-  if(!und(inner)){ w.inner(inner)}
-  return w
+function inst(viewClass, app, parent, obj, seq) {
+  let v = new viewClass(app, parent, obj, seq)
+  v.init(...v._args_)
+  return v
 }
 
 
@@ -425,10 +435,12 @@ export function getNode(elementOrId) {
   return el
 }
 
-
-export function bindWrapper(elementOrId, wrapper) {
+/*
+ * Mounts a view onto an element.
+ */
+export function mount(view, elementOrId) {
   let target = getNode(elementOrId)
-  target.parentNode.replaceChild(wrapper.e, target)
+  target.parentNode.replaceChild(view.root.e, target)
 }
 
 
