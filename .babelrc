@@ -1,6 +1,5 @@
 {
   "plugins": [
-    ["babel-plugin-pillbug"],
     ["@babel/plugin-proposal-class-properties"]
   ]
 }

@@ -9,9 +9,13 @@
   "author": "Andrew Buchan",
   "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.7.4"
+    "@babel/core": "^7.7.4",
+    "@babel/plugin-proposal-class-properties": "^7.7.4",
+    "bootstrap": "^4.4.1"
   },
   "dependencies": {
+    "babel-plugin-pillbug": "^1.0.7",
+    "css": "^2.2.4",
     "pillbug-js": "0.0.7"
   }
 }

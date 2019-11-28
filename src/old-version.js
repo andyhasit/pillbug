@@ -5,9 +5,20 @@
 /*
 TODO:
 
-Stop passing obj, pass s for self instead.
-pass app as db
 
+
+Nesting:
+  If a wrapper includes a view as a child, it creates a nest on the view.
+  Every view in that nest will get updated.
+  If the wrapper is cleared, the nest is also cleared.
+  If a wrapper is removed from the DOM 
+
+  h('div')
+    .child(h('ul').use(SomeView).items(myItems))
+    .child(h('div'))
+
+  This will fuck up because the second call to child detaches the <ul> element, 
+  but it won't know that, meaning that the views inside ul will be updated. 
 */
 
 
@@ -33,7 +44,9 @@ export class App {
   }
   update() {
     /* Propagates the update call to all nested views */
-    this._nested_.forEach(v => v.update())
+    requestAnimationFrame(() => {
+      this._nested_.forEach(v => v.update())
+    })
   }
 }
 
@@ -46,7 +59,7 @@ export class View {
     s.seq = seq             // The sequence - only for nested views
     s.parent = parent       // The parent view
     s.root = undefined      // This view's root wrapper
-    s._nested_ = []         // Nested views
+    s._nested_ = []         // Array of arrays of nested views
     s._named_ = {}          // Named elements or views
     s._always_ = []         // Callbacks that should always by run during update
     s._watches_ = {}        // Watches
@@ -90,7 +103,6 @@ export class View {
      * No caching is used. Use a cache object returned by this.cache() if you need caching.
      */
     let view = inst(viewClass, this.app, this, obj)
-    this._nested_.push(view)
     return view
   }
   el(name) {
@@ -123,7 +135,8 @@ export class View {
     if (newObj) {
       this.o = newObj
     }
-    this._update_(this._args_)
+    this._updateWatches_()
+    this._updateNested_()
   }
   watch(path, callback) {
     /*
@@ -148,12 +161,18 @@ export class View {
     }
     return this // Keep this because people will use it like on the wrapper.
   }
-  _saveAs_(item, name){
+  _saveAs_(item, name) {
     this._named_[name] = item
   }
-  _update_() {
-    this._updateWatches_()
-    this._nested_.forEach(n => n.update())
+  _updateNested_() {
+    this._nested_.forEach(views => {
+      views.forEach(view => view.update())
+    })
+  }
+  _getNest() {
+    let nest = []
+    this._nested_.push(nest)
+    return nest
   }
   _updateWatches_() {
     /*
@@ -179,6 +198,7 @@ export class Wrapper {
   constructor(element, view) {
     this.e = element
     this._c = null
+    this._n = undefined
     this.view = view
   }
   get Value() {
@@ -188,6 +208,9 @@ export class Wrapper {
   as(name){
     this.view._saveAs_(this, name)
     return this
+  }
+  append(item) {
+    return this._append(item)
   }
   att(name, value) {
     this.e.setAttribute(name, value)
@@ -220,10 +243,13 @@ export class Wrapper {
     return this
   }
   child(item) {
-    this.e.appendChild(this._ge(item))
-    return this
+    this.clear()
+    return this._append(item)
   }
   clear() {
+    if (this._n) {
+      this._n.length = 0
+    }
     this.e.innerHTML = ''
     this.e.textContent = ''
     this.e.value = ''
@@ -297,35 +323,50 @@ export class Wrapper {
   }
   inner(items) {
     /*
-    Updates the element's children. 
-
-    Operates differently if the use() method was called on the instance.
-
-    @items (standard mode) -- either:
-        A Wrapper.
-        A View instance.
-        Any other object, in which case we call toString().
-        An array containing any combination of the above.
-
-    @items (after calling use()) -- either:
-        An object which will be to build() or update() of
-        a view created from the viewClass previously passed to use().
-        An array of such objects.
-
-    On some browsers this may perform better using a document fragment.
-    */
-    let fn
-    if (!Array.isArray(items)) {items = [items]}
-    if (this._c) {
-      this._c.reset()
-      fn = item => this._c.getEl(item).root.e
-    } else {
-      fn = this._ge
+     * Use this for adding standard lists of items. Use items() is you used use()
+     */
+    if (!Array.isArray(items)) {
+      return this.child(items)
     }
-    return this._si(items, fn)
+    this._prepRepeat()
+    items.forEach(item => this._append(item))
+    return this._done()
+  }
+  items(items) {
+    this._prepRepeat()
+    let view
+    var t0 = performance.now();
+    items.forEach(item => {
+      view = this._c.getEl(item)
+      this._nest(view)
+      this.e.appendChild(view.root.e)
+
+      //this.e.appendChild(rowTemplate.cloneNode(true))
+    })
+    var t1 = performance.now();
+    console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.");
+    return this._done()
+  }
+  _nest(view) {
+    if (!this._n) {
+      this._n = this.view._getNest()
+    }
+    this._n.push(view)
+  }
+  _prepRepeat() {
+    this.visible(false)
+    this.clear()
+  }
+  _done() {
+    this.visible(true)
+    return this
   }
   on(event, callback) {
     this.e.addEventListener(event, e => callback(e, this))
+    return this
+  }
+  style(name, value) {
+    this.e.style[name] = value
     return this
   }
   transition(fn) {
@@ -354,30 +395,30 @@ export class Wrapper {
     this._c = new ViewCache(this.view.app, viewClass, cacheBy, this.view)
     return this
   }
-  _si(items, extractFn) {
-    this.clear()
-    items.forEach(item => {
-      this.e.appendChild(extractFn(item))
-    })
-    return this
+  visible(visible) {
+    return this.style('visibility', visible? 'visible' : 'hidden')
   }
-  _ge(item) {
-    /*
-    Returns a native DOM element for attaching
-    */
+  _append(item) {
+    /*   Appends an item to the element, saving it to the appropriate list
+     */
+    let e = null
     if (item instanceof Wrapper) {
-      return item.e
+      e = item.e
     } else if (item instanceof View) {
-      return item.root.e
+      this._nest(item)
+      e = item.root.e
     } else if (item instanceof Node) {
-      return item
+      e = item
     } else {
-      return doc.createTextNode( und(item) ? '' : item)
+      e = doc.createTextNode(und(item) ? '' : item)
     }
+    this.e.appendChild(e)
+    return this
   }
 }
 
-
+let rowTemplate = document.createElement("tr");
+rowTemplate.innerHTML = "<td class='col-md-1'></td><td class='col-md-4'><a class='lbl'></a></td><td class='col-md-1'><a class='remove'><span class='remove glyphicon glyphicon-remove' aria-hidden='true'></span></a></td><td class='col-md-6'></td>";
 export class ViewCache {
   constructor(app, viewClass, cacheBy, view) {
     /*
@@ -390,16 +431,16 @@ export class ViewCache {
         A string used to lookup a property on the item. Can be dotted. e.g. 'user.id'
         A function called with (obj, seq) which must return a key
     */
-    this._a = app
-    this._v = view
+    this.app = app
+    this.view = view
     this.viewClass = viewClass
-    this._c = {}
-    this._k = cacheBy 
+    this.cache = {}
+    this.keyFn = cacheBy 
     this._seq = 0
     if (und(cacheBy)) {
-      this._k = (obj, seq) => seq
+      this.keyFn = (obj, seq) => seq
     } else if (isStr(cacheBy)) {
-      this._k = (obj, seq) => getProp(obj, cacheBy)
+      this.keyFn = (obj, seq) => getProp(obj, cacheBy)
     }
   }
   reset() {
@@ -409,12 +450,12 @@ export class ViewCache {
     /*
     Gets a view, potentially from cache
     */
-    let view, key = this._k(obj, this._seq)
-    if (this._c.hasOwnProperty(key)) {
-      view = this._c[key]
+    let view, key = this.keyFn(obj, this._seq)
+    if (this.cache.hasOwnProperty(key)) {
+      view = this.cache[key]
     } else {
-      view = inst(this.viewClass, this._a, this._v, obj, this._seq)
-      this._c[key] = view
+      view = inst(this.viewClass, this.app, this.view, obj, this._seq)
+      this.cache[key] = view
     }
     view.update(obj)
     this._seq += 1
